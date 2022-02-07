@@ -16,7 +16,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import {computed, ref} from 'vue'
 
 // defineProps用于定义property, 变量props只能在本vue文件中使用，value和theme在外面使用
