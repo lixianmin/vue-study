@@ -14,12 +14,14 @@
 import HelloWorld from './components/HelloWorld.vue'
 import Rate from './components/Rate3.vue'
 import {ref} from "vue";
+import print_hello from "./test";
 
 
 let score = ref(3.5)
 
 function update(num: number) {
   score.value = num
+  print_hello()
 }
 
 </script>
