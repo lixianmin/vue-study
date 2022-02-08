@@ -1,39 +1,142 @@
 <template>
-  <img alt="Vue logo" src="./assets/logo.png"/>
-  <HelloWorld msg="Hello Vue 3 + TypeScript + Vite"/>
-
-  <!--  为什么:value需要加:，而theme不需要加:呢-->
-  <Rate :value="score" @update-rate="update"></Rate>
-  <Rate :value="3" theme="red"></Rate>
-  <Rate :value="2" theme="yellow"></Rate>
+  <div id="mainPanel"></div>
+  <div id="inputBoxDiv">
+    <input id="inputBox" ref="mainPanel" v-model="text" placeholder="Tab补全命令, Enter执行命令"
+           @keydown.enter.prevent="on_enter"
+    />
+  </div>
 </template>
 
 <script setup lang="ts">
-// This starter template is using Vue 3 <script setup> SFCs
-// Check out https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup
-import HelloWorld from './components/HelloWorld.vue'
-import Rate from './components/Rate3.vue'
-import {ref} from "vue";
-import print_hello from "./test";
+import {printHtml, printWithTimestamp} from "./lib/main_panel";
 
+// 变量
+let text = ""
+let myHost = ""
 
-let score = ref(3.5)
+// starx.on("disconnect", function () {
+//   printWithTimestamp("<b> disconnected from server </b>");
+// })
 
-function update(num: number) {
-  score.value = num
-  print_hello()
+// 事件
+function on_enter(evt) {
+  printHtml("hello world")
+  printWithTimestamp("what is wrong")
 }
+
 
 </script>
 
-
 <style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
+/*http://thomasf.github.io/solarized-css/*/
+html {
+  background-color: #002b36;
+  color: #839496;
+  margin: 1em;
+  font-size: 1.2em;
+}
+
+.copy_button {
+  background-color: #008CBA;
+  border: none;
+  color: white;
+}
+
+a {
+  color: #b58900;
+}
+
+a:visited {
+  color: #cb4b16;
+}
+
+a:hover {
+  color: #cb4b16;
+}
+
+table {
+  border-width: 1px;
+  border-color: #729ea5;
+  border-collapse: collapse;
+}
+
+th {
+  background-color: #004949;
+  border-width: 1px;
+  padding: 8px;
+  border-style: solid;
+  border-color: #729ea5;
+  text-align: left;
+}
+
+th:hover {
+  cursor: pointer;
+}
+
+th:after {
+  content: attr(data-text);
+  font-size: small;
+  margin-left: 5px;
+}
+
+td {
+  border-width: 1px;
+  padding: 8px;
+  border-style: solid;
+  border-color: #729ea5;
+}
+
+/*https://www.runoob.com/css/css-tooltip.html*/
+.tips {
+  position: relative;
+  display: inline-block;
+  border-bottom: 1px dotted black;
+}
+
+.tips .tips_text {
+  visibility: hidden;
+  display: inline-block;
+  white-space: nowrap;
+  background: #005959;
+  border-radius: 6px;
+  padding: 6px 6px;
+  /* 定位 */
+  position: absolute;
+  z-index: 1;
+  top: -5px;
+  left: 105%;
+}
+
+.tips:hover .tips_text {
+  visibility: visible;
+}
+
+#mainPanel {
+  margin: 0;
+  padding: 0.5em 0.5em 0.5em 0.5em;
+  position: absolute;
+  top: 0.5em;
+  left: 0.5em;
+  right: 0.5em;
+  bottom: 3em;
+  overflow: auto;
+}
+
+#inputBoxDiv {
+  padding: 0 0.5em 0 0.5em;
+  margin: 0;
+  position: absolute;
+  bottom: 1em;
+  left: 1px;
+  width: 100%;
+  overflow: hidden;
+}
+
+#inputBox {
+  width: 100%;
+  height: 1.6em;
+  font-size: 1.5em;
+  background-color: #073642;
+  color: #859900
 }
 </style>
