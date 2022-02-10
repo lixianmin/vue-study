@@ -239,7 +239,7 @@
     };
 
     const defaultEncode = function (reqId, route, msg) {
-        const type = reqId ? MessageType.TYPE_REQUEST : MessageType.TYPE_NOTIFY;
+        const type = reqId ? MessageType.Request : MessageType.Notify;
 
         if (decodeIO_encoder && decodeIO_encoder.lookup(route)) {
             var Builder = decodeIO_encoder.build(route);

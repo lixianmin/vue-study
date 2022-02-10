@@ -5,13 +5,6 @@
  Copyright (C) - All Rights Reserved
  *********************************************************************/
 
-enum MessageType {
-    TYPE_REQUEST = 0,
-    TYPE_NOTIFY = 1,
-    TYPE_RESPONSE = 2,
-    TYPE_PUSH = 3,
-}
-
 class Message {
     static MSG_FLAG_BYTES = 1
     static MSG_ROUTE_CODE_BYTES = 2
@@ -22,7 +15,127 @@ class Message {
     static MSG_COMPRESS_ROUTE_MASK = 0x1
     static MSG_TYPE_MASK = 0x7
 
-    private static calculateMsgIdBytes(id) {
+    /**
+     * Message protocol encode.
+     *
+     * @param  {Number} id            message id
+     * @param  {Number} type          message type
+     * @param  {Number} compressRoute whether compress route
+     * @param  {Number|String} route  route code or route string
+     * @param  {Buffer} msg           message body bytes
+     * @return {Buffer}               encode result
+     */
+    encode(id: number, type: MessageType, compressRoute: boolean, route: any, msg: Uint8Array): Uint8Array {
+        // calculate message max length
+        const idBytes = MessageType.hasId(type) ? Message.calculateMsgIdBytes(id) : 0;
+        let msgLen = Message.MSG_FLAG_BYTES + idBytes;
+
+        if (MessageType.hasRoute(type)) {
+            if (compressRoute) {
+                if (typeof route !== 'number') {
+                    throw new Error('error flag for number route!');
+                }
+                msgLen += Message.MSG_ROUTE_CODE_BYTES;
+            } else {
+                msgLen += Message.MSG_ROUTE_LEN_BYTES;
+                if (route) {
+                    route = strencode(route);
+                    if (route.length > 255) {
+                        throw new Error('route maxlength is overflow');
+                    }
+                    msgLen += route.length;
+                }
+            }
+        }
+
+        if (msg) {
+            msgLen += msg.length;
+        }
+
+        const buffer = new Uint8Array(msgLen);
+        let offset = 0;
+
+        // add flag
+        offset = Message.encodeMsgFlag(type, compressRoute, buffer, offset);
+
+        // add message id
+        if (MessageType.hasId(type)) {
+            offset = Message.encodeMsgId(id, buffer, offset);
+        }
+
+        // add route
+        if (MessageType.hasRoute(type)) {
+            offset = Message.encodeMsgRoute(compressRoute, route, buffer, offset);
+        }
+
+        // add body
+        if (msg != null) {
+            offset = Message.encodeMsgBody(msg, buffer, offset);
+        }
+
+        return buffer;
+    }
+
+    /**
+     * Message protocol decode.
+     *
+     * @param  {Buffer|Uint8Array} buffer message bytes
+     * @return {Object}            message object
+     */
+    static decode(buffer): object {
+        const bytes = new Uint8Array(buffer);
+        const bytesLen = bytes.length || bytes.byteLength;
+        let offset = 0;
+        let id = 0;
+        let route: string = '';
+
+        // parse flag
+        const flag = bytes[offset++];
+        const compressRoute = flag & Message.MSG_COMPRESS_ROUTE_MASK;
+        const type = (flag >> 1) & Message.MSG_TYPE_MASK;
+
+        // parse id
+        if (MessageType.hasId(type)) {
+            let m = (bytes[offset]);
+            let i = 0;
+            do {
+                m = (bytes[offset]);
+                id = id + ((m & 0x7f) * Math.pow(2, (7 * i)));
+                offset++;
+                i++;
+            } while (m >= 128);
+        }
+
+        // parse route
+        if (MessageType.hasRoute(type)) {
+            if (compressRoute) {
+                route = ((bytes[offset++]) << 8 | bytes[offset++]).toString();
+            } else {
+                const routeLen = bytes[offset++];
+                if (routeLen) {
+                    let buf = new Uint8Array(routeLen);
+                    copyArray(buf, 0, bytes, offset, routeLen);
+                    route = strdecode(route);
+                } else {
+                    route = '';
+                }
+                offset += routeLen;
+            }
+        }
+
+        // parse body
+        const bodyLen = bytesLen - offset;
+        const body = new Uint8Array(bodyLen);
+
+        copyArray(body, 0, bytes, offset, bodyLen);
+
+        return {
+            'id': id, 'type': type, 'compressRoute': compressRoute,
+            'route': route, 'body': body
+        };
+    }
+
+    private static calculateMsgIdBytes(id: number) {
         let len = 0;
         do {
             len += 1;
@@ -32,9 +145,8 @@ class Message {
         return len;
     }
 
-    private static encodeMsgFlag(type, compressRoute, buffer, offset) {
-        if (type !== MessageType.TYPE_REQUEST && type !== MessageType.TYPE_NOTIFY &&
-            type !== MessageType.TYPE_RESPONSE && type !== MessageType.TYPE_PUSH) {
+    private static encodeMsgFlag(type: MessageType, compressRoute: boolean, buffer, offset) {
+        if (!MessageType.isValid(type)) {
             throw new Error('unknown message type: ' + type);
         }
 
@@ -42,7 +154,7 @@ class Message {
         return offset + Message.MSG_FLAG_BYTES;
     }
 
-    private static encodeMsgId(id, buffer, offset) {
+    private static encodeMsgId(id: number, buffer: Uint8Array, offset: number): number {
         do {
             let tmp = id % 128;
             const next = Math.floor(id / 128);
@@ -79,137 +191,8 @@ class Message {
         return offset;
     }
 
-    private static encodeMsgBody(msg, buffer, offset) {
+    private static encodeMsgBody(msg: Uint8Array, buffer: Uint8Array, offset: number): number {
         copyArray(buffer, offset, msg, 0, msg.length);
         return offset + msg.length;
-    }
-
-    private static msgHasId(type: number): boolean {
-        return type === MessageType.TYPE_REQUEST || type === MessageType.TYPE_RESPONSE;
-    }
-
-    private static msgHasRoute(type: number): boolean {
-        return type === MessageType.TYPE_REQUEST || type === MessageType.TYPE_NOTIFY ||
-            type === MessageType.TYPE_PUSH;
-    }
-
-    /**
-     * Message protocol encode.
-     *
-     * @param  {Number} id            message id
-     * @param  {Number} type          message type
-     * @param  {Number} compressRoute whether compress route
-     * @param  {Number|String} route  route code or route string
-     * @param  {Buffer} msg           message body bytes
-     * @return {Buffer}               encode result
-     */
-    encode(id, type, compressRoute, route, msg) {
-        // calculate message max length
-        const idBytes = Message.msgHasId(type) ? Message.calculateMsgIdBytes(id) : 0;
-        let msgLen = Message.MSG_FLAG_BYTES + idBytes;
-
-        if (Message.msgHasRoute(type)) {
-            if (compressRoute) {
-                if (typeof route !== 'number') {
-                    throw new Error('error flag for number route!');
-                }
-                msgLen += Message.MSG_ROUTE_CODE_BYTES;
-            } else {
-                msgLen += Message.MSG_ROUTE_LEN_BYTES;
-                if (route) {
-                    route = strencode(route);
-                    if (route.length > 255) {
-                        throw new Error('route maxlength is overflow');
-                    }
-                    msgLen += route.length;
-                }
-            }
-        }
-
-        if (msg) {
-            msgLen += msg.length;
-        }
-
-        const buffer = new Uint8Array(msgLen);
-        let offset = 0;
-
-        // add flag
-        offset = Message.encodeMsgFlag(type, compressRoute, buffer, offset);
-
-        // add message id
-        if (Message.msgHasId(type)) {
-            offset = Message.encodeMsgId(id, buffer, offset);
-        }
-
-        // add route
-        if (Message.msgHasRoute(type)) {
-            offset = Message.encodeMsgRoute(compressRoute, route, buffer, offset);
-        }
-
-        // add body
-        if (msg) {
-            offset = Message.encodeMsgBody(msg, buffer, offset);
-        }
-
-        return buffer;
-    }
-
-    /**
-     * Message protocol decode.
-     *
-     * @param  {Buffer|Uint8Array} buffer message bytes
-     * @return {Object}            message object
-     */
-    decode(buffer): object {
-        const bytes = new Uint8Array(buffer);
-        const bytesLen = bytes.length || bytes.byteLength;
-        let offset = 0;
-        let id = 0;
-        let route: string = '';
-
-        // parse flag
-        const flag = bytes[offset++];
-        const compressRoute = flag & Message.MSG_COMPRESS_ROUTE_MASK;
-        const type = (flag >> 1) & Message.MSG_TYPE_MASK;
-
-        // parse id
-        if (Message.msgHasId(type)) {
-            let m = (bytes[offset]);
-            let i = 0;
-            do {
-                m = (bytes[offset]);
-                id = id + ((m & 0x7f) * Math.pow(2, (7 * i)));
-                offset++;
-                i++;
-            } while (m >= 128);
-        }
-
-        // parse route
-        if (Message.msgHasRoute(type)) {
-            if (compressRoute) {
-                route = ((bytes[offset++]) << 8 | bytes[offset++]).toString();
-            } else {
-                const routeLen = bytes[offset++];
-                if (routeLen) {
-                    let buf = new Uint8Array(routeLen);
-                    copyArray(buf, 0, bytes, offset, routeLen);
-                    route = strdecode(route);
-                } else {
-                    route = '';
-                }
-                offset += routeLen;
-            }
-        }
-
-        // parse body
-        const bodyLen = bytesLen - offset;
-        const body = new Uint8Array(bodyLen);
-
-        copyArray(body, 0, bytes, offset, bodyLen);
-
-        return {
-            'id': id, 'type': type, 'compressRoute': compressRoute,
-            'route': route, 'body': body
-        };
     }
 }
