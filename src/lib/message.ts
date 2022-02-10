@@ -1,0 +1,215 @@
+/********************************************************************
+ created:    2022-01-10
+ author:     lixianmin
+
+ Copyright (C) - All Rights Reserved
+ *********************************************************************/
+
+enum MessageType {
+    TYPE_REQUEST = 0,
+    TYPE_NOTIFY = 1,
+    TYPE_RESPONSE = 2,
+    TYPE_PUSH = 3,
+}
+
+class Message {
+    static MSG_FLAG_BYTES = 1
+    static MSG_ROUTE_CODE_BYTES = 2
+    static MSG_ID_MAX_BYTES = 5
+    static MSG_ROUTE_LEN_BYTES = 1
+
+    static MSG_ROUTE_CODE_MAX = 0xffff
+    static MSG_COMPRESS_ROUTE_MASK = 0x1
+    static MSG_TYPE_MASK = 0x7
+
+    private static calculateMsgIdBytes(id) {
+        let len = 0;
+        do {
+            len += 1;
+            id >>= 7;
+        } while (id > 0);
+
+        return len;
+    }
+
+    private static encodeMsgFlag(type, compressRoute, buffer, offset) {
+        if (type !== MessageType.TYPE_REQUEST && type !== MessageType.TYPE_NOTIFY &&
+            type !== MessageType.TYPE_RESPONSE && type !== MessageType.TYPE_PUSH) {
+            throw new Error('unknown message type: ' + type);
+        }
+
+        buffer[offset] = (type << 1) | (compressRoute ? 1 : 0);
+        return offset + Message.MSG_FLAG_BYTES;
+    }
+
+    private static encodeMsgId(id, buffer, offset) {
+        do {
+            let tmp = id % 128;
+            const next = Math.floor(id / 128);
+
+            if (next !== 0) {
+                tmp = tmp + 128;
+            }
+            buffer[offset++] = tmp;
+
+            id = next;
+        } while (id !== 0);
+
+        return offset;
+    }
+
+    private static encodeMsgRoute(compressRoute, route, buffer, offset) {
+        if (compressRoute) {
+            if (route > Message.MSG_ROUTE_CODE_MAX) {
+                throw new Error('route number is overflow');
+            }
+
+            buffer[offset++] = (route >> 8) & 0xff;
+            buffer[offset++] = route & 0xff;
+        } else {
+            if (route) {
+                buffer[offset++] = route.length & 0xff;
+                copyArray(buffer, offset, route, 0, route.length);
+                offset += route.length;
+            } else {
+                buffer[offset++] = 0;
+            }
+        }
+
+        return offset;
+    }
+
+    private static encodeMsgBody(msg, buffer, offset) {
+        copyArray(buffer, offset, msg, 0, msg.length);
+        return offset + msg.length;
+    }
+
+    private static msgHasId(type: number): boolean {
+        return type === MessageType.TYPE_REQUEST || type === MessageType.TYPE_RESPONSE;
+    }
+
+    private static msgHasRoute(type: number): boolean {
+        return type === MessageType.TYPE_REQUEST || type === MessageType.TYPE_NOTIFY ||
+            type === MessageType.TYPE_PUSH;
+    }
+
+    /**
+     * Message protocol encode.
+     *
+     * @param  {Number} id            message id
+     * @param  {Number} type          message type
+     * @param  {Number} compressRoute whether compress route
+     * @param  {Number|String} route  route code or route string
+     * @param  {Buffer} msg           message body bytes
+     * @return {Buffer}               encode result
+     */
+    encode(id, type, compressRoute, route, msg) {
+        // calculate message max length
+        const idBytes = Message.msgHasId(type) ? Message.calculateMsgIdBytes(id) : 0;
+        let msgLen = Message.MSG_FLAG_BYTES + idBytes;
+
+        if (Message.msgHasRoute(type)) {
+            if (compressRoute) {
+                if (typeof route !== 'number') {
+                    throw new Error('error flag for number route!');
+                }
+                msgLen += Message.MSG_ROUTE_CODE_BYTES;
+            } else {
+                msgLen += Message.MSG_ROUTE_LEN_BYTES;
+                if (route) {
+                    route = strencode(route);
+                    if (route.length > 255) {
+                        throw new Error('route maxlength is overflow');
+                    }
+                    msgLen += route.length;
+                }
+            }
+        }
+
+        if (msg) {
+            msgLen += msg.length;
+        }
+
+        const buffer = new Uint8Array(msgLen);
+        let offset = 0;
+
+        // add flag
+        offset = Message.encodeMsgFlag(type, compressRoute, buffer, offset);
+
+        // add message id
+        if (Message.msgHasId(type)) {
+            offset = Message.encodeMsgId(id, buffer, offset);
+        }
+
+        // add route
+        if (Message.msgHasRoute(type)) {
+            offset = Message.encodeMsgRoute(compressRoute, route, buffer, offset);
+        }
+
+        // add body
+        if (msg) {
+            offset = Message.encodeMsgBody(msg, buffer, offset);
+        }
+
+        return buffer;
+    }
+
+    /**
+     * Message protocol decode.
+     *
+     * @param  {Buffer|Uint8Array} buffer message bytes
+     * @return {Object}            message object
+     */
+    decode(buffer): object {
+        const bytes = new Uint8Array(buffer);
+        const bytesLen = bytes.length || bytes.byteLength;
+        let offset = 0;
+        let id = 0;
+        let route: string = '';
+
+        // parse flag
+        const flag = bytes[offset++];
+        const compressRoute = flag & Message.MSG_COMPRESS_ROUTE_MASK;
+        const type = (flag >> 1) & Message.MSG_TYPE_MASK;
+
+        // parse id
+        if (Message.msgHasId(type)) {
+            let m = (bytes[offset]);
+            let i = 0;
+            do {
+                m = (bytes[offset]);
+                id = id + ((m & 0x7f) * Math.pow(2, (7 * i)));
+                offset++;
+                i++;
+            } while (m >= 128);
+        }
+
+        // parse route
+        if (Message.msgHasRoute(type)) {
+            if (compressRoute) {
+                route = ((bytes[offset++]) << 8 | bytes[offset++]).toString();
+            } else {
+                const routeLen = bytes[offset++];
+                if (routeLen) {
+                    let buf = new Uint8Array(routeLen);
+                    copyArray(buf, 0, bytes, offset, routeLen);
+                    route = strdecode(route);
+                } else {
+                    route = '';
+                }
+                offset += routeLen;
+            }
+        }
+
+        // parse body
+        const bodyLen = bytesLen - offset;
+        const body = new Uint8Array(bodyLen);
+
+        copyArray(body, 0, bytes, offset, bodyLen);
+
+        return {
+            'id': id, 'type': type, 'compressRoute': compressRoute,
+            'route': route, 'body': body
+        };
+    }
+}
