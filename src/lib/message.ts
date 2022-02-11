@@ -82,7 +82,7 @@ class Message {
      * @param  {Buffer|Uint8Array} buffer message bytes
      * @return {Object}            message object
      */
-    static decode(buffer): object {
+    static decode(buffer): Message {
         const bytes = new Uint8Array(buffer);
         const bytesLen = bytes.length || bytes.byteLength;
         let offset = 0;
@@ -129,10 +129,8 @@ class Message {
 
         copyArray(body, 0, bytes, offset, bodyLen);
 
-        return {
-            'id': id, 'type': type, 'compressRoute': compressRoute,
-            'route': route, 'body': body
-        };
+        let result = new Message(id, type, compressRoute, route, body)
+        return result
     }
 
     private static calculateMsgIdBytes(id: number) {
@@ -195,4 +193,18 @@ class Message {
         copyArray(buffer, offset, msg, 0, msg.length);
         return offset + msg.length;
     }
+
+    private constructor(id: number, type: number, compressRoute: number, route: string, body: Uint8Array) {
+        this.id = id
+        this.type = type
+        this.compressRoute = compressRoute
+        this.route = route
+        this.body = body
+    }
+
+    public id
+    public type
+    public compressRoute
+    public route
+    public body: Uint8Array
 }

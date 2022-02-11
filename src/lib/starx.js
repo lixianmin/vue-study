@@ -6,17 +6,17 @@
     const starx = {};
     window.starx = starx;
 
-    starx.pushHandlers = {};
-    starx.on = function (key, handler) {
-        starx.pushHandlers[key] = handler;
-    };
+    // starx.pushHandlers = {};
+    // starx.on = function (key, handler) {
+    //     starx.pushHandlers[key] = handler;
+    // };
 
-    starx.emit = function (key, args) {
-        const handler = starx.pushHandlers[key];
-        if (typeof handler == 'function') {
-            handler(key);
-        }
-    };
+    // starx.emit = function (key, args) {
+    //     const handler = starx.pushHandlers[key];
+    //     if (typeof handler == 'function') {
+    //         handler(key);
+    //     }
+    // };
 
     // route string to code
     let abbrs;
@@ -33,8 +33,8 @@
     let heartbeatInterval;
     const rsa = window.rsa;
 
-    const decodeIO_encoder = null;
-    const decodeIO_decoder = null;
+    // const decodeIO_encoder = null;
+    // const decodeIO_decoder = null;
 
     const DEFAULT_MAX_RECONNECT_ATTEMPTS = 10;
     let reconnectionDelay;
@@ -42,16 +42,16 @@
     let reconnectUrl;
     let useCrypto;
 
-    const processPackage = function (msgs) {
-        if (Array.isArray(msgs)) {
-            for (let i = 0; i < msgs.length; i++) {
-                const msg = msgs[i];
-                handlers[msg.type](msg.body);
-            }
-        } else {
-            handlers[msgs.type](msgs.body);
-        }
-    };
+    // const processPackage = function (msgs) {
+    //     if (Array.isArray(msgs)) {
+    //         for (let i = 0; i < msgs.length; i++) {
+    //             const msg = msgs[i];
+    //             handlers[msg.type](msg.body);
+    //         }
+    //     } else {
+    //         handlers[msgs.type](msgs.body);
+    //     }
+    // };
 
     let encode;
     let handshakeCallback;
@@ -60,80 +60,80 @@
     let reconncetTimer;
     let reconnect;
 
-    const defaultDecode = function (data) {
-        const msg = Message.decode(data);
+    // const defaultDecode = function (data) {
+    //     const msg = Message.decode(data);
+    //
+    //     if (msg.id > 0) {
+    //         msg.route = routeMap[msg.id];
+    //         delete routeMap[msg.id];
+    //         if (!msg.route) {
+    //             return;
+    //         }
+    //     }
+    //
+    //     msg.body = decompose(msg);
+    //     return msg;
+    // };
 
-        if (msg.id > 0) {
-            msg.route = routeMap[msg.id];
-            delete routeMap[msg.id];
-            if (!msg.route) {
-                return;
-            }
-        }
-
-        msg.body = decompose(msg);
-        return msg;
-    };
-
-    const reset = function () {
-        reconnect = false;
-        reconnectionDelay = 1000 * 5;
-        reconnectAttempts = 0;
-        clearTimeout(reconncetTimer);
-    };
+    // const reset = function () {
+    //     reconnect = false;
+    //     reconnectionDelay = 1000 * 5;
+    //     reconnectAttempts = 0;
+    //     clearTimeout(reconncetTimer);
+    // };
 
     //Initialize data used in starx client
-    const initData = function (data) {
-        if (!data || !data.sys) {
-            return;
-        }
+    // const initData = function (data) {
+    //     if (!data || !data.sys) {
+    //         return;
+    //     }
+    //
+    //     dict = data.sys.dict;
+    //
+    //     // init compress dict
+    //     if (dict) {
+    //         abbrs = {};
+    //
+    //         for (const route in dict) {
+    //             abbrs[dict[route]] = route;
+    //         }
+    //     }
+    // };
 
-        dict = data.sys.dict;
+    // const handshakeInit = function (data) {
+    //     if (data.sys && data.sys.heartbeat) {
+    //         heartbeatInterval = data.sys.heartbeat * 1000;   // heartbeat interval
+    //         heartbeatTimeout = heartbeatInterval * 2;        // max heartbeat timeout
+    //     } else {
+    //         heartbeatInterval = 0;
+    //         heartbeatTimeout = 0;
+    //     }
+    //
+    //     initData(data);
+    //
+    //     if (typeof handshakeCallback === 'function') {
+    //         handshakeCallback(data.user);
+    //     }
+    // };
 
-        // init compress dict
-        if (dict) {
-            abbrs = {};
-
-            for (const route in dict) {
-                abbrs[dict[route]] = route;
-            }
-        }
-    };
-
-    const handshakeInit = function (data) {
-        if (data.sys && data.sys.heartbeat) {
-            heartbeatInterval = data.sys.heartbeat * 1000;   // heartbeat interval
-            heartbeatTimeout = heartbeatInterval * 2;        // max heartbeat timeout
-        } else {
-            heartbeatInterval = 0;
-            heartbeatTimeout = 0;
-        }
-
-        initData(data);
-
-        if (typeof handshakeCallback === 'function') {
-            handshakeCallback(data.user);
-        }
-    };
-
-    const decompose = function (msg) {
-        let route = msg.route;
-
-        //Decompose route from dict
-        if (msg.compressRoute) {
-            if (!abbrs[route]) {
-                return {};
-            }
-
-            route = msg.route = abbrs[route];
-        }
-
-        if (decodeIO_decoder && decodeIO_decoder.lookup(route)) {
-            return decodeIO_decoder.build(route).decode(msg.body);
-        } else {
-            return JSON.parse(Protocol.strdecode(msg.body));
-        }
-    };
+    // const decompose = function (msg) {
+    //     let route = msg.route;
+    //
+    //     //Decompose route from dict
+    //     if (msg.compressRoute) {
+    //         if (!abbrs[route]) {
+    //             return {};
+    //         }
+    //
+    //         route = msg.route = abbrs[route];
+    //     }
+    //
+    //     if (decodeIO_decoder && decodeIO_decoder.lookup(route)) {
+    //         return decodeIO_decoder.build(route).decode(msg.body);
+    //     } else {
+    //         return JSON.parse(Protocol.strdecode(msg.body));
+    //     }
+    // };
 
     const processMessage = function (msg) {
         if (!msg.id) { // server push message

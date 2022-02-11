@@ -24,6 +24,21 @@ function on_enter(evt) {
   printWithTimestamp("what is wrong")
 }
 
+class Text{
+  id :number
+  constructor(id:number) {
+    this.id = id
+  }
+}
+
+let m = new Map<number, Text>()
+m.set(1, new Text(23))
+const item = m.get(1) as Text;
+
+if (typeof item != 'undefined') {
+  console.log(item)
+  console.log(typeof item)
+}
 
 </script>
 
