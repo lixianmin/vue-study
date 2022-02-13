@@ -25,7 +25,7 @@ class Message {
      * @param  {Buffer} msg           message body bytes
      * @return {Buffer}               encode result
      */
-    encode(id: number, type: MessageType, compressRoute: boolean, route: any, msg: Uint8Array): Uint8Array {
+    public static encode(id: number, type: MessageType, compressRoute: boolean, route: any, msg: Uint8Array): Uint8Array {
         // calculate message max length
         const idBytes = MessageType.hasId(type) ? Message.calculateMsgIdBytes(id) : 0;
         let msgLen = Message.MSG_FLAG_BYTES + idBytes;

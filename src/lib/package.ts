@@ -37,7 +37,7 @@ class Package {
      * @param  {Uint8Array} body  body content in bytes
      * @return {Uint8Array}       new byte array that contains encode result
      */
-    encode(type: number, body: Uint8Array): Uint8Array {
+    public static encode(type: number, body: Uint8Array): Uint8Array {
         const length = body ? body.length : 0;
         const buffer = new Uint8Array(Package.PKG_HEAD_BYTES + length);
 
@@ -60,7 +60,7 @@ class Package {
      * @param  {Uint8Array} buffer byte array containing package content
      * @return {Object}           {type: package type, buffer: body byte array}
      */
-    decode(buffer): object {
+    public static decode(buffer): object {
         let offset = 0;
         const bytes = new Uint8Array(buffer);
         const rs: Array<object> = [];

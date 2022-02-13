@@ -135,127 +135,127 @@
     //     }
     // };
 
-    const processMessage = function (msg) {
-        if (!msg.id) { // server push message
-            const handler = starx.pushHandlers[msg.route];
-            if (typeof handler == 'function') {
-                handler(msg.body);
-            }
-            return;
-        }
+    // const processMessage = function (msg) {
+    //     if (!msg.id) { // server push message
+    //         const handler = starx.pushHandlers[msg.route];
+    //         if (typeof handler == 'function') {
+    //             handler(msg.body);
+    //         }
+    //         return;
+    //     }
+    //
+    //     //if have a id then find the callback function with the request
+    //     const cb = callbacks[msg.id];
+    //     delete callbacks[msg.id];
+    //
+    //     if (typeof cb !== 'function') {
+    //         return;
+    //     }
+    //
+    //     cb(msg.body);
+    // };
 
-        //if have a id then find the callback function with the request
-        const cb = callbacks[msg.id];
-        delete callbacks[msg.id];
+    // const heartbeatTimeoutCb = function () {
+    //     const gap = nextHeartbeatTimeout - Date.now();
+    //     if (gap > gapThreshold) {
+    //         heartbeatTimeoutId = setTimeout(heartbeatTimeoutCb, gap);
+    //     } else {
+    //         console.error('server heartbeat timeout');
+    //         starx.emit('heartbeat timeout');
+    //         starx.disconnect();
+    //     }
+    // };
 
-        if (typeof cb !== 'function') {
-            return;
-        }
+    // const send = function (packet) {
+    //     socket.send(packet.buffer);
+    // };
 
-        cb(msg.body);
-    };
+    // const sendMessage = function (reqId, route, msg) {
+    //     if (useCrypto) {
+    //         msg = JSON.stringify(msg);
+    //         var sig = rsa.signString(msg, "sha256");
+    //         msg = JSON.parse(msg);
+    //         msg['__crypto__'] = sig;
+    //     }
+    //
+    //     if (encode) {
+    //         msg = encode(reqId, route, msg);
+    //     }
+    //
+    //     const packet = Package.encode(Package.TYPE_DATA, msg);
+    //     send(packet);
+    // };
 
-    const heartbeatTimeoutCb = function () {
-        const gap = nextHeartbeatTimeout - Date.now();
-        if (gap > gapThreshold) {
-            heartbeatTimeoutId = setTimeout(heartbeatTimeoutCb, gap);
-        } else {
-            console.error('server heartbeat timeout');
-            starx.emit('heartbeat timeout');
-            starx.disconnect();
-        }
-    };
+    // const connect = function (params, url, cb) {
+    //     console.log('connect to: ' + url);
+    //
+    //     params = params || {};
+    //     const maxReconnectAttempts = params.maxReconnectAttempts || DEFAULT_MAX_RECONNECT_ATTEMPTS;
+    //     reconnectUrl = url;
+    //
+    //     const onopen = function (event) {
+    //         if (!!reconnect) {
+    //             starx.emit('reconnect');
+    //         }
+    //         reset();
+    //         const obj = Package.encode(Package.TYPE_HANDSHAKE, Protocol.strencode(JSON.stringify(handshakeBuffer)));
+    //         send(obj);
+    //     };
+    //
+    //     const onmessage = function (event) {
+    //         processPackage(Package.decode(event.data), cb);
+    //
+    //         // new package arrived, update the heartbeat timeout
+    //         if (heartbeatTimeout) {
+    //             nextHeartbeatTimeout = Date.now() + heartbeatTimeout;
+    //         }
+    //     };
+    //
+    //     const onerror = function (event) {
+    //         starx.emit('io-error', event);
+    //         console.error('socket error: ', event);
+    //     };
+    //
+    //     const onclose = function (event) {
+    //         starx.emit('close', event);
+    //         starx.emit('disconnect', event);
+    //         console.log('socket close: ', event);
+    //         if (!!params.reconnect && reconnectAttempts < maxReconnectAttempts) {
+    //             reconnect = true;
+    //             reconnectAttempts++;
+    //             reconncetTimer = setTimeout(function () {
+    //                 connect(params, reconnectUrl, cb);
+    //             }, reconnectionDelay);
+    //             reconnectionDelay *= 2;
+    //         }
+    //     };
+    //
+    //     socket = new WebSocket(url);
+    //     socket.binaryType = 'arraybuffer';
+    //     socket.onopen = onopen;
+    //     socket.onmessage = onmessage;
+    //     socket.onerror = onerror;
+    //     socket.onclose = onclose;
+    // };
 
-    const send = function (packet) {
-        socket.send(packet.buffer);
-    };
-
-    const sendMessage = function (reqId, route, msg) {
-        if (useCrypto) {
-            msg = JSON.stringify(msg);
-            var sig = rsa.signString(msg, "sha256");
-            msg = JSON.parse(msg);
-            msg['__crypto__'] = sig;
-        }
-
-        if (encode) {
-            msg = encode(reqId, route, msg);
-        }
-
-        const packet = Package.encode(Package.TYPE_DATA, msg);
-        send(packet);
-    };
-
-    const connect = function (params, url, cb) {
-        console.log('connect to: ' + url);
-
-        params = params || {};
-        const maxReconnectAttempts = params.maxReconnectAttempts || DEFAULT_MAX_RECONNECT_ATTEMPTS;
-        reconnectUrl = url;
-
-        const onopen = function (event) {
-            if (!!reconnect) {
-                starx.emit('reconnect');
-            }
-            reset();
-            const obj = Package.encode(Package.TYPE_HANDSHAKE, Protocol.strencode(JSON.stringify(handshakeBuffer)));
-            send(obj);
-        };
-
-        const onmessage = function (event) {
-            processPackage(Package.decode(event.data), cb);
-
-            // new package arrived, update the heartbeat timeout
-            if (heartbeatTimeout) {
-                nextHeartbeatTimeout = Date.now() + heartbeatTimeout;
-            }
-        };
-
-        const onerror = function (event) {
-            starx.emit('io-error', event);
-            console.error('socket error: ', event);
-        };
-
-        const onclose = function (event) {
-            starx.emit('close', event);
-            starx.emit('disconnect', event);
-            console.log('socket close: ', event);
-            if (!!params.reconnect && reconnectAttempts < maxReconnectAttempts) {
-                reconnect = true;
-                reconnectAttempts++;
-                reconncetTimer = setTimeout(function () {
-                    connect(params, reconnectUrl, cb);
-                }, reconnectionDelay);
-                reconnectionDelay *= 2;
-            }
-        };
-
-        socket = new WebSocket(url);
-        socket.binaryType = 'arraybuffer';
-        socket.onopen = onopen;
-        socket.onmessage = onmessage;
-        socket.onerror = onerror;
-        socket.onclose = onclose;
-    };
-
-    const defaultEncode = function (reqId, route, msg) {
-        const type = reqId ? MessageType.Request : MessageType.Notify;
-
-        if (decodeIO_encoder && decodeIO_encoder.lookup(route)) {
-            var Builder = decodeIO_encoder.build(route);
-            msg = new Builder(msg).encodeNB();
-        } else {
-            msg = Protocol.strencode(JSON.stringify(msg));
-        }
-
-        var compressRoute = 0;
-        if (dict && dict[route]) {
-            route = dict[route];
-            compressRoute = 1;
-        }
-
-        return Message.encode(reqId, type, compressRoute, route, msg);
-    };
+    // const defaultEncode = function (reqId, route, msg) {
+    //     const type = reqId ? MessageType.Request : MessageType.Notify;
+    //
+    //     if (decodeIO_encoder && decodeIO_encoder.lookup(route)) {
+    //         var Builder = decodeIO_encoder.build(route);
+    //         msg = new Builder(msg).encodeNB();
+    //     } else {
+    //         msg = Protocol.strencode(JSON.stringify(msg));
+    //     }
+    //
+    //     var compressRoute = 0;
+    //     if (dict && dict[route]) {
+    //         route = dict[route];
+    //         compressRoute = 1;
+    //     }
+    //
+    //     return Message.encode(reqId, type, compressRoute, route, msg);
+    // };
 
     const JS_WS_CLIENT_TYPE = 'js-websocket';
     const JS_WS_CLIENT_VERSION = '0.0.1';
@@ -300,67 +300,67 @@
 
     let initCallback = null;
 
-    starx.init = function (params, cb) {
-        initCallback = cb;
-        handshakeCallback = params.handshakeCallback;
+    // starx.init = function (params, cb) {
+    //     initCallback = cb;
+    //     handshakeCallback = params.handshakeCallback;
+    //
+    //     encode = params.encode || defaultEncode;
+    //     decode = params.decode || defaultDecode;
+    //
+    //     handshakeBuffer.user = params.user;
+    //     if (params.encrypt) {
+    //         useCrypto = true;
+    //         rsa.generate(1024, "10001");
+    //         handshakeBuffer.sys.rsa = {
+    //             rsa_n: rsa.n.toString(16),
+    //             rsa_e: rsa.e
+    //         };
+    //     }
+    //
+    //     connect(params, params.url, cb);
+    // };
 
-        encode = params.encode || defaultEncode;
-        decode = params.decode || defaultDecode;
+    // starx.disconnect = function () {
+    //     if (socket) {
+    //         if (socket.disconnect) socket.disconnect();
+    //         if (socket.close) socket.close();
+    //         console.log('disconnect');
+    //         socket = null;
+    //     }
+    //
+    //     if (heartbeatId) {
+    //         clearTimeout(heartbeatId);
+    //         heartbeatId = null;
+    //     }
+    //     if (heartbeatTimeoutId) {
+    //         clearTimeout(heartbeatTimeoutId);
+    //         heartbeatTimeoutId = null;
+    //     }
+    // };
 
-        handshakeBuffer.user = params.user;
-        if (params.encrypt) {
-            useCrypto = true;
-            rsa.generate(1024, "10001");
-            handshakeBuffer.sys.rsa = {
-                rsa_n: rsa.n.toString(16),
-                rsa_e: rsa.e
-            };
-        }
+    // starx.request = function (route, msg, cb) {
+    //     if (arguments.length === 2 && typeof msg === 'function') {
+    //         cb = msg;
+    //         msg = {};
+    //     } else {
+    //         msg = msg || {};
+    //     }
+    //     route = route || msg.route;
+    //     if (!route) {
+    //         return;
+    //     }
+    //
+    //     reqId++;
+    //     sendMessage(reqId, route, msg);
+    //
+    //     callbacks[reqId] = cb;
+    //     routeMap[reqId] = route;
+    // };
 
-        connect(params, params.url, cb);
-    };
-
-    starx.disconnect = function () {
-        if (socket) {
-            if (socket.disconnect) socket.disconnect();
-            if (socket.close) socket.close();
-            console.log('disconnect');
-            socket = null;
-        }
-
-        if (heartbeatId) {
-            clearTimeout(heartbeatId);
-            heartbeatId = null;
-        }
-        if (heartbeatTimeoutId) {
-            clearTimeout(heartbeatTimeoutId);
-            heartbeatTimeoutId = null;
-        }
-    };
-
-    starx.request = function (route, msg, cb) {
-        if (arguments.length === 2 && typeof msg === 'function') {
-            cb = msg;
-            msg = {};
-        } else {
-            msg = msg || {};
-        }
-        route = route || msg.route;
-        if (!route) {
-            return;
-        }
-
-        reqId++;
-        sendMessage(reqId, route, msg);
-
-        callbacks[reqId] = cb;
-        routeMap[reqId] = route;
-    };
-
-    starx.notify = function (route, msg) {
-        msg = msg || {};
-        sendMessage(0, route, msg);
-    };
+    // starx.notify = function (route, msg) {
+    //     msg = msg || {};
+    //     sendMessage(0, route, msg);
+    // };
 
     handlers[Package.TYPE_HEARTBEAT] = function (data) {
         if (!heartbeatInterval) {
