@@ -5,7 +5,7 @@
  Copyright (C) - All Rights Reserved
  *********************************************************************/
 
-class Package {
+export default class Package {
     static TYPE_HANDSHAKE = 1
     static TYPE_HANDSHAKE_ACK = 2
     static TYPE_HEARTBEAT = 3

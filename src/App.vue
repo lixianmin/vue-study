@@ -9,14 +9,20 @@
 
 <script setup lang="ts">
 import {printHtml, printWithTimestamp} from "./lib/main_panel";
+import StartX from "./lib/starx";
 
 // 变量
 let text = ""
-let myHost = ""
+let url = "ws://127.0.0.1:8888/ws"
 
-// starx.on("disconnect", function () {
-//   printWithTimestamp("<b> disconnected from server </b>");
-// })
+let starx = new StartX
+starx.init({url: url}, function () {
+  console.log("starx init")
+})
+
+starx.on("disconnect", function () {
+  printWithTimestamp("<b> disconnected from server </b>");
+})
 
 // 事件
 function on_enter(evt) {
@@ -35,10 +41,6 @@ let m = new Map<number, Text>()
 m.set(1, new Text(23))
 const item = m.get(1) as Text;
 
-if (typeof item != 'undefined') {
-  console.log(item)
-  console.log(typeof item)
-}
 
 </script>
 

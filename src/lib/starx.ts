@@ -4,11 +4,12 @@
 
  Copyright (C) - All Rights Reserved
  *********************************************************************/
+import Package from "./package";
 
 type PushHandlerFunc = (data: any) => void
 type HandlerFunc = (data: string) => void
 
-class StartX {
+export default class StartX {
     public on(key: string, handler: PushHandlerFunc) {
         this.pushHandlers[key] = handler;
     }
@@ -171,6 +172,7 @@ class StartX {
 
         let that = this
         const onopen = function (event) {
+            console.log("onopen", event)
             if (that.reconnect) {
                 that.emit('reconnect');
             }
@@ -222,12 +224,12 @@ class StartX {
         this.socket = socket
     }
 
-    private init(params, cb) {
-        this.initCallback = cb;
-        this.handshakeCallback = params.handshakeCallback;
+    public init(params, callback) {
+        this.initCallback = callback
+        this.handshakeCallback = params.handshakeCallback
 
-        this.encode = params.encode || this.defaultEncode;
-        this.decode = params.decode || this.defaultDecode;
+        this.encode = params.encode || this.defaultEncode
+        this.decode = params.decode || this.defaultDecode
 
         this.handshakeBuffer.user = params.user;
         // if (params.encrypt) {
@@ -243,7 +245,7 @@ class StartX {
         this.handlers[Package.TYPE_HANDSHAKE] = this.handleHandshake
         this.handlers[Package.TYPE_DATA] = this.handleData
         this.handlers[Package.TYPE_KICK] = this.handleKick
-        this.connect(params, params.url, cb);
+        this.connect(params, params.url, callback)
     }
 
     private defaultEncode(reqId, route, msg) {
