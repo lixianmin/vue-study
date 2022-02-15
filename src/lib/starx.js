@@ -362,65 +362,65 @@
     //     sendMessage(0, route, msg);
     // };
 
-    handlers[Package.TYPE_HEARTBEAT] = function (data) {
-        if (!heartbeatInterval) {
-            // no heartbeat
-            return;
-        }
+    // handlers[Package.TYPE_HEARTBEAT] = function (data) {
+    //     if (!heartbeatInterval) {
+    //         // no heartbeat
+    //         return;
+    //     }
+    //
+    //     const obj = Package.encode(Package.TYPE_HEARTBEAT);
+    //     if (heartbeatTimeoutId) {
+    //         clearTimeout(heartbeatTimeoutId);
+    //         heartbeatTimeoutId = null;
+    //     }
+    //
+    //     if (heartbeatId) {
+    //         // already in a heartbeat interval
+    //         return;
+    //     }
+    //
+    //     heartbeatId = setTimeout(function () {
+    //         heartbeatId = null;
+    //         send(obj);
+    //
+    //         nextHeartbeatTimeout = Date.now() + heartbeatTimeout;
+    //         heartbeatTimeoutId = setTimeout(heartbeatTimeoutCb, heartbeatTimeout);
+    //     }, heartbeatInterval);
+    // };
 
-        const obj = Package.encode(Package.TYPE_HEARTBEAT);
-        if (heartbeatTimeoutId) {
-            clearTimeout(heartbeatTimeoutId);
-            heartbeatTimeoutId = null;
-        }
+    // handlers[Package.TYPE_HANDSHAKE] = function (data) {
+    //     data = JSON.parse(Protocol.strdecode(data));
+    //     if (data.code === RES_OLD_CLIENT) {
+    //         starx.emit('error', 'client version not fullfill');
+    //         return;
+    //     }
+    //
+    //     if (data.code !== RES_OK) {
+    //         starx.emit('error', 'handshake fail');
+    //         return;
+    //     }
+    //
+    //     handshakeInit(data);
+    //
+    //     const obj = Package.encode(Package.TYPE_HANDSHAKE_ACK);
+    //     send(obj);
+    //
+    //     if (initCallback) {
+    //         initCallback(socket);
+    //     }
+    // };
 
-        if (heartbeatId) {
-            // already in a heartbeat interval
-            return;
-        }
-
-        heartbeatId = setTimeout(function () {
-            heartbeatId = null;
-            send(obj);
-
-            nextHeartbeatTimeout = Date.now() + heartbeatTimeout;
-            heartbeatTimeoutId = setTimeout(heartbeatTimeoutCb, heartbeatTimeout);
-        }, heartbeatInterval);
-    };
-
-    handlers[Package.TYPE_HANDSHAKE] = function (data) {
-        data = JSON.parse(Protocol.strdecode(data));
-        if (data.code === RES_OLD_CLIENT) {
-            starx.emit('error', 'client version not fullfill');
-            return;
-        }
-
-        if (data.code !== RES_OK) {
-            starx.emit('error', 'handshake fail');
-            return;
-        }
-
-        handshakeInit(data);
-
-        const obj = Package.encode(Package.TYPE_HANDSHAKE_ACK);
-        send(obj);
-
-        if (initCallback) {
-            initCallback(socket);
-        }
-    };
-
-    handlers[Package.TYPE_DATA] = function (data) {
-        let msg = data;
-        if (decode) {
-            msg = decode(msg);
-        }
-
-        processMessage(msg);
-    };
-
-    handlers[Package.TYPE_KICK] = function (data) {
-        data = JSON.parse(Protocol.strdecode(data));
-        starx.emit('onKick', data);
-    };
+    // handlers[Package.TYPE_DATA] = function (data) {
+    //     let msg = data;
+    //     if (decode) {
+    //         msg = decode(msg);
+    //     }
+    //
+    //     processMessage(msg);
+    // };
+    //
+    // handlers[Package.TYPE_KICK] = function (data) {
+    //     data = JSON.parse(Protocol.strdecode(data));
+    //     starx.emit('onKick', data);
+    // };
 })();

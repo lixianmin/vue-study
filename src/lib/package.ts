@@ -37,7 +37,7 @@ class Package {
      * @param  {Uint8Array} body  body content in bytes
      * @return {Uint8Array}       new byte array that contains encode result
      */
-    public static encode(type: number, body: Uint8Array): Uint8Array {
+    public static encode(type: number, body: Uint8Array = new Uint8Array): Uint8Array {
         const length = body ? body.length : 0;
         const buffer = new Uint8Array(Package.PKG_HEAD_BYTES + length);
 

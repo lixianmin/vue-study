@@ -5,7 +5,7 @@
  Copyright (C) - All Rights Reserved
  *********************************************************************/
 
-type PushHandlerFunc = (data: Uint8Array) => void
+type PushHandlerFunc = (data: any) => void
 type HandlerFunc = (data: string) => void
 
 class StartX {
@@ -13,7 +13,7 @@ class StartX {
         this.pushHandlers[key] = handler;
     }
 
-    public emit(key: string, args: Uint8Array = new Uint8Array) {
+    public emit(key: string, args: any = '') {
         const handler = this.pushHandlers[key] as PushHandlerFunc
         if (handler != null) {
             handler(args)
@@ -200,6 +200,7 @@ class StartX {
             that.emit('close', event)
             that.emit('disconnect', event)
             console.log('socket close: ', event)
+
             if (!!params.reconnect && that.reconnectAttempts < maxReconnectAttempts) {
                 that.reconnect = true
                 that.reconnectAttempts++
@@ -238,6 +239,10 @@ class StartX {
         //     };
         // }
 
+        this.handlers[Package.TYPE_HEARTBEAT] = this.handleHeartBeat
+        this.handlers[Package.TYPE_HANDSHAKE] = this.handleHandshake
+        this.handlers[Package.TYPE_DATA] = this.handleData
+        this.handlers[Package.TYPE_KICK] = this.handleKick
         this.connect(params, params.url, cb);
     }
 
@@ -296,6 +301,72 @@ class StartX {
     public notify(route, msg) {
         msg = msg || {}
         this.sendMessage(0, route, msg)
+    }
+
+    private handleHeartBeat(data) {
+        if (!this.heartbeatInterval) {
+            // no heartbeat
+            return;
+        }
+
+        const obj = Package.encode(Package.TYPE_HEARTBEAT)
+        if (this.heartbeatTimeoutId) {
+            clearTimeout(this.heartbeatTimeoutId)
+            this.heartbeatTimeoutId = null
+        }
+
+        if (this.heartbeatId) {
+            // already in a heartbeat interval
+            return;
+        }
+
+        let that = this
+        this.heartbeatId = setTimeout(function () {
+            that.heartbeatId = null;
+            that.send(obj);
+
+            that.nextHeartbeatTimeout = Date.now() + that.heartbeatTimeout;
+            that.heartbeatTimeoutId = setTimeout(that.heartbeatTimeoutCb, that.heartbeatTimeout);
+        }, this.heartbeatInterval);
+    }
+
+    private handleHandshake(data) {
+        data = JSON.parse(strdecode(data))
+
+        const RES_OLD_CLIENT = 501
+        if (data.code === RES_OLD_CLIENT) {
+            this.emit('error', 'client version not fullfill')
+            return;
+        }
+
+        const RES_OK = 200
+        if (data.code !== RES_OK) {
+            this.emit('error', 'handshake fail');
+            return;
+        }
+
+        this.handshakeInit(data);
+
+        const obj = Package.encode(Package.TYPE_HANDSHAKE_ACK);
+        this.send(obj);
+
+        if (this.initCallback) {
+            this.initCallback(this.socket)
+        }
+    }
+
+    private handleData(data) {
+        let msg = data
+        if (this.decode) {
+            msg = this.decode(msg)
+        }
+
+        this.processMessage(msg)
+    }
+
+    private handleKick(data) {
+        data = JSON.parse(strdecode(data))
+        this.emit('onKick', data)
     }
 
     private socket: WebSocket | null = null
