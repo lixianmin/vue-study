@@ -307,7 +307,10 @@ export default class StartX {
         this.sendMessage(0, route, msg)
     }
 
-    private handleHeartBeat(data) {
+    // 通过 => 定义 function, 使它可以在定义的时候捕获this, 而不是在使用的时候
+    // https://www.typescriptlang.org/docs/handbook/functions.html#this-and-arrow-functions
+    private handleHeartBeat = (data) => {
+        console.log(`this=${this}, data=${data}`)
         if (!this.heartbeatInterval) {
             // no heartbeat
             return;
@@ -334,7 +337,7 @@ export default class StartX {
         }, this.heartbeatInterval);
     }
 
-    private handleHandshake(data) {
+    private handleHandshake = (data) => {
         data = JSON.parse(strdecode(data))
 
         const RES_OLD_CLIENT = 501
@@ -359,7 +362,7 @@ export default class StartX {
         }
     }
 
-    private handleData(data) {
+    private handleData = (data) => {
         let msg = data
         if (this.decode) {
             msg = this.decode(msg)
@@ -368,7 +371,7 @@ export default class StartX {
         this.processMessage(msg)
     }
 
-    private handleKick(data) {
+    private handleKick = (data) => {
         data = JSON.parse(strdecode(data))
         this.emit('onKick', data)
     }
