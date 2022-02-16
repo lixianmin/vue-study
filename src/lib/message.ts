@@ -4,8 +4,9 @@
 
  Copyright (C) - All Rights Reserved
  *********************************************************************/
+import {copyArray, strdecode, strencode} from "./protocol";
 
-class Message {
+export class Message {
     static MSG_FLAG_BYTES = 1
     static MSG_ROUTE_CODE_BYTES = 2
     static MSG_ID_MAX_BYTES = 5

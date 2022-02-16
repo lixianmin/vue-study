@@ -5,6 +5,8 @@
  Copyright (C) - All Rights Reserved
  *********************************************************************/
 import Package from "./package";
+import {strdecode, strencode} from "./protocol";
+import {Message} from "./message";
 
 type PushHandlerFunc = (data: any) => void
 type HandlerFunc = (data: string) => void

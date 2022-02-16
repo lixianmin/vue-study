@@ -5,8 +5,7 @@
  Copyright (C) - All Rights Reserved
  *********************************************************************/
 
-
-function copyArray(dest: Uint8Array, destOffset: number, src: Uint8Array, srcOffset: number, length: number) {
+export function copyArray(dest: Uint8Array, destOffset: number, src: Uint8Array, srcOffset: number, length: number) {
     for (let index = 0; index < length; index++) {
         dest[destOffset++] = src[srcOffset++];
     }
@@ -19,7 +18,7 @@ function copyArray(dest: Uint8Array, destOffset: number, src: Uint8Array, srcOff
  * msg message body
  * socketio current support string
  */
-function strencode(str: string): Uint8Array {
+export function strencode(str: string): Uint8Array {
     const buf = new ArrayBuffer(str.length * 3);
     const byteArray = new Uint8Array(buf);
 
@@ -52,7 +51,7 @@ function strencode(str: string): Uint8Array {
  * msg String data
  * return Message Object
  */
-function strdecode(buffer): string {
+export function strdecode(buffer): string {
     const bytes = new Uint8Array(buffer);
     const array: Array<number> = [];
     let offset = 0;

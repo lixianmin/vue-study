@@ -4,6 +4,7 @@
 
  Copyright (C) - All Rights Reserved
  *********************************************************************/
+import {copyArray} from "./protocol";
 
 export default class Package {
     static TYPE_HANDSHAKE = 1

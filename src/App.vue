@@ -13,7 +13,7 @@ import StartX from "./lib/starx";
 
 // 变量
 let text = ""
-let url = "ws://127.0.0.1:8888/ws"
+let url = "ws://127.0.0.1:8888/ws/" // todo 这个地址必须以/结尾, 否则连不上, 有些奇怪
 
 let starx = new StartX
 starx.init({url: url}, function () {
