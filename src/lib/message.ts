@@ -4,7 +4,8 @@
 
  Copyright (C) - All Rights Reserved
  *********************************************************************/
-import {copyArray, strdecode, strencode} from "./protocol";
+import {strdecode, strencode} from "./protocol";
+import {BufferTools} from "./buffer_tools";
 
 export class Message {
     static MSG_FLAG_BYTES = 1
@@ -114,8 +115,8 @@ export class Message {
             } else {
                 const routeLen = bytes[offset++];
                 if (routeLen) {
-                    let buf = new Uint8Array(routeLen);
-                    copyArray(buf, 0, bytes, offset, routeLen);
+                    let buf = new Uint8Array(routeLen)
+                    BufferTools.blockCopy(bytes, offset, buf, 0, routeLen)
                     route = strdecode(route);
                 } else {
                     route = '';
@@ -126,9 +127,8 @@ export class Message {
 
         // parse body
         const bodyLen = bytesLen - offset;
-        const body = new Uint8Array(bodyLen);
-
-        copyArray(body, 0, bytes, offset, bodyLen);
+        const body = new Uint8Array(bodyLen)
+        BufferTools.blockCopy(bytes, offset, body, 0, bodyLen)
 
         let result = new Message(id, type, compressRoute, route, body)
         return result
@@ -179,8 +179,8 @@ export class Message {
             buffer[offset++] = route & 0xff;
         } else {
             if (route) {
-                buffer[offset++] = route.length & 0xff;
-                copyArray(buffer, offset, route, 0, route.length);
+                buffer[offset++] = route.length & 0xff
+                BufferTools.blockCopy(route, 0, buffer, offset, route.length)
                 offset += route.length;
             } else {
                 buffer[offset++] = 0;
@@ -191,7 +191,7 @@ export class Message {
     }
 
     private static encodeMsgBody(msg: Uint8Array, buffer: Uint8Array, offset: number): number {
-        copyArray(buffer, offset, msg, 0, msg.length);
+        BufferTools.blockCopy(msg, 0, buffer, offset, msg.length)
         return offset + msg.length;
     }
 

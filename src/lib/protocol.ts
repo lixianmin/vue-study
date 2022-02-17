@@ -4,12 +4,7 @@
 
  Copyright (C) - All Rights Reserved
  *********************************************************************/
-
-export function copyArray(dest: Uint8Array, destOffset: number, src: Uint8Array, srcOffset: number, length: number) {
-    for (let index = 0; index < length; index++) {
-        dest[destOffset++] = src[srcOffset++];
-    }
-}
+import {BufferTools} from "./buffer_tools";
 
 /**
  * pomele client encode
@@ -41,8 +36,8 @@ export function strencode(str: string): Uint8Array {
         }
     }
 
-    const result = new Uint8Array(offset);
-    copyArray(result, 0, byteArray, 0, offset);
+    const result = new Uint8Array(offset)
+    BufferTools.blockCopy(byteArray, 0, result, 0, offset)
     return result;
 }
 

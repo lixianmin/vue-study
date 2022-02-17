@@ -306,8 +306,7 @@ export default class StartX {
 
     // 通过 => 定义 function, 使它可以在定义的时候捕获this, 而不是在使用的时候
     // https://www.typescriptlang.org/docs/handbook/functions.html#this-and-arrow-functions
-    private handleHeartBeat = (data) => {
-        console.log(`this=${this}, data=${data}`)
+    private handleHeartBeat = (data: Uint8Array) => {
         if (!this.heartbeatInterval) {
             // no heartbeat
             return;

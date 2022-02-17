@@ -4,8 +4,8 @@
 
  Copyright (C) - All Rights Reserved
  *********************************************************************/
-import {copyArray} from "./protocol";
 import {OctetsStream, SeekOrigin} from "./octets_stream";
+import {BufferTools} from "./buffer_tools";
 
 export class Package {
     /**
@@ -42,7 +42,7 @@ export class Package {
         buffer[index++] = length & 0xff;
 
         if (body) {
-            copyArray(buffer, index, body, 0, length);
+            BufferTools.blockCopy(body, 0, buffer, index, length)
         }
 
         return buffer;
