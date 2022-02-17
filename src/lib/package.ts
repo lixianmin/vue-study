@@ -83,6 +83,6 @@ export class Package {
         this.body = body
     }
 
-    public type: number
-    public body: Uint8Array
+    public readonly type: number
+    public readonly body: Uint8Array
 }

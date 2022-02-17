@@ -177,13 +177,13 @@ export default class StartX {
             that.send(obj)
         }
 
-        const onmessage = function (event) {
+        const onmessage = function (event: MessageEvent) {
             // todo 这里并没有处理粘包问题, 回头需要补上
-            that.processPackages(Package.decode(event.data));
+            that.processPackages(Package.decode(event.data))
 
             // new package arrived, update the heartbeat timeout
             if (that.heartbeatTimeout) {
-                that.nextHeartbeatTimeout = Date.now() + that.heartbeatTimeout;
+                that.nextHeartbeatTimeout = Date.now() + that.heartbeatTimeout
             }
         }
 
@@ -373,7 +373,7 @@ export default class StartX {
     private encode
     private decode
     private initCallback
-    private reqId = 0;
+    private reqId = 0
 
 
     private reconnectUrl = ""
