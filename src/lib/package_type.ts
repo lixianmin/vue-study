@@ -5,7 +5,7 @@
  Copyright (C) - All Rights Reserved
  *********************************************************************/
 
-enum PackageType {
+export enum PackageType {
     Handshake = 1,
     HandshakeAck = 2,
     Heartbeat = 3,

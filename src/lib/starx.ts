@@ -4,7 +4,8 @@
 
  Copyright (C) - All Rights Reserved
  *********************************************************************/
-import Package from "./package";
+import {Package} from "./package";
+import {PackageType} from "./package_type";
 import {strdecode, strencode} from "./protocol";
 import {Message} from "./message";
 
@@ -23,22 +24,13 @@ export default class StartX {
         }
     }
 
-    private processPackage(pack: any) {
-        console.log(pack)
-        if (Array.isArray(pack)) {
-            for (let i = 0; i < pack.length; i++) {
-                const msg = pack[i];
-                this.handleMessage(msg.type, msg.body)
+    private processPackages(packages: any) {
+        for (let i = 0; i < packages.length; i++) {
+            const pack = packages[i];
+            const handler = this.handlers[pack.type] as HandlerFunc
+            if (handler != null) {
+                handler(pack.body)
             }
-        } else {
-            this.handleMessage(pack.type, pack.body)
-        }
-    }
-
-    private handleMessage(type, body) {
-        const handler = this.handlers[type];
-        if (handler != null) {
-            handler(body)
         }
     }
 
@@ -186,9 +178,8 @@ export default class StartX {
         }
 
         const onmessage = function (event) {
-            // todo 问题是, 原始的js中方法定义processPackage就只有一个参数啊
-            // that.processPackage(Package.decode(event.data), cb);
-            that.processPackage(Package.decode(event.data));
+            // todo 这里并没有处理粘包问题, 回头需要补上
+            that.processPackages(Package.decode(event.data));
 
             // new package arrived, update the heartbeat timeout
             if (that.heartbeatTimeout) {

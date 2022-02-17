@@ -6,10 +6,7 @@
  *********************************************************************/
 import {copyArray} from "./protocol";
 
-export default class Package {
-    static PKG_HEAD_BYTES = 4
-
-
+export class Package {
     /**
      * Package protocol encode.
      *
@@ -34,7 +31,8 @@ export default class Package {
      */
     public static encode(type: number, body: Uint8Array = new Uint8Array): Uint8Array {
         const length = body ? body.length : 0;
-        const buffer = new Uint8Array(Package.PKG_HEAD_BYTES + length);
+        const packageHeadLength = 4
+        const buffer = new Uint8Array(packageHeadLength + length)
 
         let index = 0;
         buffer[index++] = type & 0xff;
@@ -45,6 +43,7 @@ export default class Package {
         if (body) {
             copyArray(buffer, index, body, 0, length);
         }
+
         return buffer;
     }
 
@@ -52,24 +51,38 @@ export default class Package {
      * Package protocol decode.
      * See encode for package format.
      *
-     * @param  {Uint8Array} buffer byte array containing package content
-     * @return {Object}           {type: package type, buffer: body byte array}
+     * @param  {ArrayBuffer} buffer byte array containing package content
+     * @return {Package}           {type: package type, buffer: body byte array}
      */
-    public static decode(buffer): object {
-        let offset = 0;
-        const bytes = new Uint8Array(buffer);
-        const rs: Array<object> = [];
+    public static decode(buffer: ArrayBuffer): Package[] {
+        let offset = 0
+        const bytes = new Uint8Array(buffer)
+        console.log("buffer.byteLength", buffer.byteLength, bytes.length)
+        const list: Package[] = []
 
         while (offset < bytes.length) {
-            const type = bytes[offset++];
-            const length = ((bytes[offset++]) << 16 | (bytes[offset++]) << 8 | bytes[offset++]) >>> 0;
-            const body = length ? new Uint8Array(length) : new Uint8Array();
-            copyArray(body, 0, bytes, offset, length);
-            offset += length;
+            const type: number = bytes[offset++]
+            const length: number = ((bytes[offset++]) << 16 | (bytes[offset++]) << 8 | bytes[offset++]) >>> 0
+            if (length >= 0) {
+                const body = new Uint8Array(length)
+                if (length > 0) {
+                    copyArray(body, 0, bytes, offset, length)
+                    offset += length
+                }
 
-            rs.push({'type': type, 'body': body});
+                let pack = new Package(type, body)
+                list.push(pack)
+            }
         }
 
-        return rs.length === 1 ? rs[0] : rs;
+        return list
     }
+
+    private constructor(type: number, body: Uint8Array) {
+        this.type = type
+        this.body = body
+    }
+
+    public type: number
+    public body: Uint8Array
 }
