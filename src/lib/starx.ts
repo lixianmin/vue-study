@@ -145,23 +145,24 @@ export default class StartX {
         }
     }
 
-    private sendMessage(reqId, route, msg: Uint8Array) {
+    private sendMessage(requestId: number, route, message: any) {
         // if (this.useCrypto) {
-        //     msg = JSON.stringify(msg);
-        //     var sig = window.rsa.signString(msg, "sha256");
-        //     msg = JSON.parse(msg);
-        //     msg['__crypto__'] = sig;
+        //     message = JSON.stringify(message);
+        //     var sig = window.rsa.signString(message, "sha256");
+        //     message = JSON.parse(message);
+        //     message['__crypto__'] = sig;
         // }
 
+        let body = message
         if (this.encode) {
-            msg = this.encode(reqId, route, msg)
+            body = this.encode(requestId, route, message)
         }
 
-        const packet = Packet.encode(PacketType.Data, msg)
+        const packet = Packet.encode(PacketType.Data, body)
         this.send(packet)
     }
 
-    public connect(params, url: string, cb) {
+    public connect(params, url: string, callback) {
         console.log('connect to: ' + url)
         params = params || {}
 
@@ -209,7 +210,7 @@ export default class StartX {
                 this.reconnectAttempts++
 
                 this.reconnectTimer = setTimeout(() => {
-                    this.connect(params, this.reconnectUrl, cb)
+                    this.connect(params, this.reconnectUrl, callback)
                 }, this.reconnectionDelay)
                 this.reconnectionDelay *= 2
             }
@@ -249,10 +250,10 @@ export default class StartX {
         this.connect(params, params.url, callback)
     }
 
-    private defaultEncode(reqId, route, msg) {
-        const type = reqId ? MessageType.Request : MessageType.Notify
+    private defaultEncode(requestId: number, route, message) {
+        const type = requestId != 0 ? MessageType.Request : MessageType.Notify
 
-        msg = strencode(JSON.stringify(msg))
+        message = strencode(JSON.stringify(message))
 
         let compressRoute = false
         if (this.dict && this.dict[route]) {
@@ -260,7 +261,7 @@ export default class StartX {
             compressRoute = true
         }
 
-        return Message.encode(reqId, type, compressRoute, route, msg)
+        return Message.encode(requestId, type, compressRoute, route, message)
     }
 
     public disconnect() {
@@ -281,24 +282,12 @@ export default class StartX {
         }
     }
 
-    public request(route, message, cb) {
-        if (arguments.length === 2 && typeof message === 'function') {
-            cb = message
-            message = {}
-        } else {
-            message = message || {}
-        }
+    public request(route: string, message, callback) {
+        let requestId = this.requestIdGenerator++
+        this.sendMessage(requestId, route, message)
 
-        route = route || message.route
-        if (!route) {
-            return
-        }
-
-        let reqId = this.reqId++
-        this.sendMessage(reqId, route, message)
-
-        this.callbacks[reqId] = cb
-        this.routeMap[reqId] = route
+        this.callbacks[requestId] = callback
+        this.routeMap[requestId] = route
     }
 
     public notify(route, message) {
@@ -379,8 +368,7 @@ export default class StartX {
     private encode
     private decode
     private initCallback
-    private reqId = 0
-
+    private requestIdGenerator = 0
 
     private reconnectUrl = ""
     private reconnect = false

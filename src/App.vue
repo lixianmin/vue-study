@@ -16,12 +16,12 @@ let text = ""
 let url = "ws://127.0.0.1:8888/ws/" // todo 这个地址必须以/结尾, 否则连不上, 有些奇怪
 
 let starx = new StartX
-starx.init({url: url}, function () {
+starx.init({url: url}, () => {
   console.log("starx init")
-  starx.notify("hello", "world")
+  // starx.notify("hello", "world")
 
   const bean = {
-    command: "a test bean",
+    command: "help",
   }
 
   sendBean("console.command", bean, (obj) => {
