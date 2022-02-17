@@ -8,6 +8,7 @@ import {Package} from "./package";
 import {PackageType} from "./package_type";
 import {strdecode, strencode} from "./protocol";
 import {Message} from "./message";
+import {OctetsStream, SeekOrigin} from "./octets_stream";
 
 type PushHandlerFunc = (data: any) => void
 type HandlerFunc = (data: string) => void
@@ -178,8 +179,12 @@ export default class StartX {
         }
 
         const onmessage = function (event: MessageEvent) {
-            // todo 这里并没有处理粘包问题, 回头需要补上
-            that.processPackages(Package.decode(event.data))
+            let data = new Uint8Array(event.data)
+            let stream = that.buffer
+
+            stream.write(data, 0, data.length)
+            stream.setPosition(0)
+            that.processPackages(Package.decode(stream))
 
             // new package arrived, update the heartbeat timeout
             if (that.heartbeatTimeout) {
@@ -369,6 +374,7 @@ export default class StartX {
     }
 
     private socket: WebSocket | null = null
+    private buffer = new OctetsStream(8)
     private useCrypto = false
     private encode
     private decode

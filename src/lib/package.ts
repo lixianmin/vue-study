@@ -5,6 +5,7 @@
  Copyright (C) - All Rights Reserved
  *********************************************************************/
 import {copyArray} from "./protocol";
+import {OctetsStream, SeekOrigin} from "./octets_stream";
 
 export class Package {
     /**
@@ -51,28 +52,33 @@ export class Package {
      * Package protocol decode.
      * See encode for package format.
      *
-     * @param  {ArrayBuffer} buffer byte array containing package content
-     * @return {Package}           {type: package type, buffer: body byte array}
+     * @param  {OctetsStream} stream
+     * @return {Package}
      */
-    public static decode(buffer: ArrayBuffer): Package[] {
-        let offset = 0
-        const bytes = new Uint8Array(buffer)
-        console.log("buffer.byteLength", buffer.byteLength, bytes.length)
+    public static decode(stream: OctetsStream): Package[] {
         const list: Package[] = []
+        const headSize = 4
 
-        while (offset < bytes.length) {
-            const type: number = bytes[offset++]
-            const length: number = ((bytes[offset++]) << 16 | (bytes[offset++]) << 8 | bytes[offset++]) >>> 0
-            if (length >= 0) {
-                const body = new Uint8Array(length)
-                if (length > 0) {
-                    copyArray(body, 0, bytes, offset, length)
-                    offset += length
-                }
-
-                let pack = new Package(type, body)
-                list.push(pack)
+        while (stream.getLength() - stream.getPosition() >= headSize) {
+            const type = stream.readByte()
+            const size = stream.readByte() << 16 | stream.readByte() << 8 | stream.readByte() >>> 0
+            if (size < 0) {
+                throw new Error(`type=${type}, length = ${size}, stream=${stream.toString()}`)
             }
+
+            // 剩下的stream长度不够了, 则把刚刚读的4个字节吐出来
+            if (stream.getLength() < size) {
+                stream.seek(-4, SeekOrigin.Current)
+                break
+            }
+
+            const body = new Uint8Array(size)
+            if (size > 0) {
+                stream.read(body, 0, size)
+            }
+
+            let pack = new Package(type, body)
+            list.push(pack)
         }
 
         return list
