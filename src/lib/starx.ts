@@ -23,14 +23,15 @@ export default class StartX {
         }
     }
 
-    private processPackage(msgs: any) {
-        if (Array.isArray(msgs)) {
-            for (let i = 0; i < msgs.length; i++) {
-                const msg = msgs[i];
+    private processPackage(pack: any) {
+        console.log(pack)
+        if (Array.isArray(pack)) {
+            for (let i = 0; i < pack.length; i++) {
+                const msg = pack[i];
                 this.handleMessage(msg.type, msg.body)
             }
         } else {
-            this.handleMessage(msgs.type, msgs.body)
+            this.handleMessage(pack.type, pack.body)
         }
     }
 
@@ -76,7 +77,7 @@ export default class StartX {
         this.reconnect = false;
         this.reconnectionDelay = 1000 * 5;
         this.reconnectAttempts = 0;
-        clearTimeout(this.reconncetTimer);
+        clearTimeout(this.reconnectTimer);
     }
 
     private initData(data) {
@@ -98,8 +99,8 @@ export default class StartX {
 
     private handshakeInit(data) {
         if (data.sys && data.sys.heartbeat) {
-            this.heartbeatInterval = data.sys.heartbeat * 1000;   // heartbeat interval
-            this.heartbeatTimeout = this.heartbeatInterval * 2;        // max heartbeat timeout
+            this.heartbeatInterval = data.sys.heartbeat * 1000;     // heartbeat interval
+            this.heartbeatTimeout = this.heartbeatInterval * 2;     // max heartbeat timeout
         } else {
             this.heartbeatInterval = 0
             this.heartbeatTimeout = 0
@@ -160,7 +161,7 @@ export default class StartX {
             msg = this.encode(reqId, route, msg);
         }
 
-        const packet = Package.encode(Package.TYPE_DATA, msg);
+        const packet = Package.encode(PackageType.Data, msg);
         this.send(packet);
     }
 
@@ -180,7 +181,7 @@ export default class StartX {
             }
 
             that.reset()
-            const obj = Package.encode(Package.TYPE_HANDSHAKE, strencode(JSON.stringify(that.handshakeBuffer)));
+            const obj = Package.encode(PackageType.Handshake, strencode(JSON.stringify(that.handshakeBuffer)));
             that.send(obj)
         }
 
@@ -209,7 +210,7 @@ export default class StartX {
                 that.reconnect = true
                 that.reconnectAttempts++
 
-                that.reconncetTimer = setTimeout(function () {
+                that.reconnectTimer = setTimeout(function () {
                     that.connect(params, that.reconnectUrl, cb)
                 }, that.reconnectionDelay)
                 that.reconnectionDelay *= 2
@@ -243,10 +244,10 @@ export default class StartX {
         //     };
         // }
 
-        this.handlers[Package.TYPE_HEARTBEAT] = this.handleHeartBeat
-        this.handlers[Package.TYPE_HANDSHAKE] = this.handleHandshake
-        this.handlers[Package.TYPE_DATA] = this.handleData
-        this.handlers[Package.TYPE_KICK] = this.handleKick
+        this.handlers[PackageType.Heartbeat] = this.handleHeartBeat
+        this.handlers[PackageType.Handshake] = this.handleHandshake
+        this.handlers[PackageType.Data] = this.handleData
+        this.handlers[PackageType.Kick] = this.handleKick
         this.connect(params, params.url, callback)
     }
 
@@ -316,7 +317,7 @@ export default class StartX {
             return;
         }
 
-        const obj = Package.encode(Package.TYPE_HEARTBEAT)
+        const obj = Package.encode(PackageType.Heartbeat)
         if (this.heartbeatTimeoutId) {
             clearTimeout(this.heartbeatTimeoutId)
             this.heartbeatTimeoutId = null
@@ -354,7 +355,7 @@ export default class StartX {
 
         this.handshakeInit(data);
 
-        const obj = Package.encode(Package.TYPE_HANDSHAKE_ACK);
+        const obj = Package.encode(PackageType.HandshakeAck);
         this.send(obj);
 
         if (this.initCallback) {
@@ -386,7 +387,7 @@ export default class StartX {
 
     private reconnectUrl = ""
     private reconnect = false
-    private reconncetTimer: any
+    private reconnectTimer: any
     private reconnectAttempts = 0
     private reconnectionDelay = 5000
 

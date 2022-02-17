@@ -31,6 +31,6 @@ export function println() {
     printHtml("<br>");
 }
 
-export function printWithTimestamp(html:string) {
+export function printWithTimestamp(html: string) {
     printHtml("[" + moment(new Date()).format("HH:mm:ss.S") + "] " + html);
 }

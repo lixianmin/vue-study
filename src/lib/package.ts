@@ -7,12 +7,6 @@
 import {copyArray} from "./protocol";
 
 export default class Package {
-    static TYPE_HANDSHAKE = 1
-    static TYPE_HANDSHAKE_ACK = 2
-    static TYPE_HEARTBEAT = 3
-    static TYPE_DATA = 4
-    static TYPE_KICK = 5
-
     static PKG_HEAD_BYTES = 4
 
 
