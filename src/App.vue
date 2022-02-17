@@ -8,7 +8,7 @@
 </template>
 
 <script setup lang="ts">
-import {printHtml, printWithTimestamp} from "./lib/main_panel";
+import {printHtml, println, printWithTimestamp} from "./lib/main_panel";
 import StartX from "./lib/starx";
 
 // 变量
@@ -18,6 +18,15 @@ let url = "ws://127.0.0.1:8888/ws/" // todo 这个地址必须以/结尾, 否则
 let starx = new StartX
 starx.init({url: url}, function () {
   console.log("starx init")
+  starx.notify("hello", "world")
+
+  const bean = {
+    command: "a test bean",
+  }
+
+  sendBean("console.command", bean, (obj) => {
+    console.log("-------->", obj)
+  })
 })
 
 starx.on("disconnect", function () {
@@ -30,16 +39,13 @@ function on_enter(evt) {
   printWithTimestamp("what is wrong")
 }
 
-class Text{
-  id :number
-  constructor(id:number) {
-    this.id = id
-  }
+function sendBean(route, msg, callback) {
+  const json = JSON.stringify(msg)
+  printWithTimestamp("<b>client请求：</b>")
+  printHtml(json)
+  println()
+  starx.request(route, msg, callback)
 }
-
-let m = new Map<number, Text>()
-m.set(1, new Text(23))
-const item = m.get(1) as Text;
 
 
 </script>

@@ -7,7 +7,7 @@
 import {OctetsStream, SeekOrigin} from "./octets_stream";
 import {BufferTools} from "./buffer_tools";
 
-export class Package {
+export class Packet {
     /**
      * Package protocol encode.
      *
@@ -30,22 +30,22 @@ export class Package {
      * @param  {Uint8Array} body  body content in bytes
      * @return {Uint8Array}       new byte array that contains encode result
      */
-    public static encode(type: number, body: Uint8Array = new Uint8Array): Uint8Array {
-        const length = body ? body.length : 0;
-        const packageHeadLength = 4
-        const buffer = new Uint8Array(packageHeadLength + length)
+    public static encode(type: number, body?: Uint8Array): Uint8Array {
+        const length = body ? body.length : 0
+        const headSize = 4
+        const buffer = new Uint8Array(headSize + length)
 
         let index = 0;
-        buffer[index++] = type & 0xff;
-        buffer[index++] = (length >> 16) & 0xff;
-        buffer[index++] = (length >> 8) & 0xff;
-        buffer[index++] = length & 0xff;
+        buffer[index++] = type & 0xff
+        buffer[index++] = (length >> 16) & 0xff
+        buffer[index++] = (length >> 8) & 0xff
+        buffer[index++] = length & 0xff
 
         if (body) {
             BufferTools.blockCopy(body, 0, buffer, index, length)
         }
 
-        return buffer;
+        return buffer
     }
 
     /**
@@ -53,10 +53,10 @@ export class Package {
      * See encode for package format.
      *
      * @param  {OctetsStream} stream
-     * @return {Package}
+     * @return {Packet}
      */
-    public static decode(stream: OctetsStream): Package[] {
-        const list: Package[] = []
+    public static decode(stream: OctetsStream): Packet[] {
+        const list: Packet[] = []
         const headSize = 4
 
         while (stream.getLength() - stream.getPosition() >= headSize) {
@@ -77,7 +77,7 @@ export class Package {
                 stream.read(body, 0, size)
             }
 
-            let pack = new Package(type, body)
+            let pack = new Packet(type, body)
             list.push(pack)
         }
 

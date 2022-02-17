@@ -4,11 +4,12 @@
 
  Copyright (C) - All Rights Reserved
  *********************************************************************/
-import {Package} from "./package";
-import {PackageType} from "./package_type";
+import {Packet} from "./packet";
+import {PacketType} from "./packet_type";
 import {strdecode, strencode} from "./protocol";
 import {Message} from "./message";
 import {OctetsStream, SeekOrigin} from "./octets_stream";
+import {MessageType} from "./message_type";
 
 type PushHandlerFunc = (data: any) => void
 type HandlerFunc = (data: string) => void
@@ -136,9 +137,11 @@ export default class StartX {
         }
     }
 
-    private send(packet: any) {
+    private send(packet: Uint8Array) {
         if (this.socket != null) {
             this.socket.send(packet.buffer)
+        } else {
+            console.log("socket = null")
         }
     }
 
@@ -151,11 +154,11 @@ export default class StartX {
         // }
 
         if (this.encode) {
-            msg = this.encode(reqId, route, msg);
+            msg = this.encode(reqId, route, msg)
         }
 
-        const packet = Package.encode(PackageType.Data, msg);
-        this.send(packet);
+        const packet = Packet.encode(PacketType.Data, msg)
+        this.send(packet)
     }
 
     public connect(params, url: string, cb) {
@@ -164,52 +167,51 @@ export default class StartX {
 
         const DEFAULT_MAX_RECONNECT_ATTEMPTS = 10
         const maxReconnectAttempts = params.maxReconnectAttempts || DEFAULT_MAX_RECONNECT_ATTEMPTS;
-        this.reconnectUrl = url;
+        this.reconnectUrl = url
 
-        let that = this
-        const onopen = function (event) {
+        const onopen = (event) => {
             console.log("onopen", event)
-            if (that.reconnect) {
-                that.emit('reconnect');
+            if (this.reconnect) {
+                this.emit('reconnect');
             }
 
-            that.reset()
-            const obj = Package.encode(PackageType.Handshake, strencode(JSON.stringify(that.handshakeBuffer)));
-            that.send(obj)
+            this.reset()
+            const packet = Packet.encode(PacketType.Handshake, strencode(JSON.stringify(this.handshakeBuffer)));
+            this.send(packet)
         }
 
-        const onmessage = function (event: MessageEvent) {
+        const onmessage = (event: MessageEvent) => {
             let data = new Uint8Array(event.data)
-            let stream = that.buffer
+            let stream = this.buffer
 
             stream.write(data, 0, data.length)
             stream.setPosition(0)
-            that.processPackages(Package.decode(stream))
+            this.processPackages(Packet.decode(stream))
 
             // new package arrived, update the heartbeat timeout
-            if (that.heartbeatTimeout) {
-                that.nextHeartbeatTimeout = Date.now() + that.heartbeatTimeout
+            if (this.heartbeatTimeout) {
+                this.nextHeartbeatTimeout = Date.now() + this.heartbeatTimeout
             }
         }
 
-        const onerror = function (event) {
-            that.emit('io-error', event)
+        const onerror = (event) => {
+            this.emit('io-error', event)
             console.error('socket error: ', event)
         };
 
-        const onclose = function (event) {
-            that.emit('close', event)
-            that.emit('disconnect', event)
+        const onclose = (event) => {
+            this.emit('close', event)
+            this.emit('disconnect', event)
             console.log('socket close: ', event)
 
-            if (!!params.reconnect && that.reconnectAttempts < maxReconnectAttempts) {
-                that.reconnect = true
-                that.reconnectAttempts++
+            if (params.reconnect && this.reconnectAttempts < maxReconnectAttempts) {
+                this.reconnect = true
+                this.reconnectAttempts++
 
-                that.reconnectTimer = setTimeout(function () {
-                    that.connect(params, that.reconnectUrl, cb)
-                }, that.reconnectionDelay)
-                that.reconnectionDelay *= 2
+                this.reconnectTimer = setTimeout(() => {
+                    this.connect(params, this.reconnectUrl, cb)
+                }, this.reconnectionDelay)
+                this.reconnectionDelay *= 2
             }
         };
 
@@ -240,10 +242,10 @@ export default class StartX {
         //     };
         // }
 
-        this.handlers[PackageType.Heartbeat] = this.handleHeartBeat
-        this.handlers[PackageType.Handshake] = this.handleHandshake
-        this.handlers[PackageType.Data] = this.handleData
-        this.handlers[PackageType.Kick] = this.handleKick
+        this.handlers[PacketType.Heartbeat] = this.handleHeartBeat
+        this.handlers[PacketType.Handshake] = this.handleHandshake
+        this.handlers[PacketType.Data] = this.handleData
+        this.handlers[PacketType.Kick] = this.handleKick
         this.connect(params, params.url, callback)
     }
 
@@ -264,44 +266,44 @@ export default class StartX {
     public disconnect() {
         if (this.socket != null) {
             this.socket.close()
-            console.log('disconnect');
-            this.socket = null;
+            console.log('disconnect')
+            this.socket = null
         }
 
         if (this.heartbeatId) {
-            clearTimeout(this.heartbeatId);
-            this.heartbeatId = null;
+            clearTimeout(this.heartbeatId)
+            this.heartbeatId = null
         }
 
         if (this.heartbeatTimeoutId) {
-            clearTimeout(this.heartbeatTimeoutId);
-            this.heartbeatTimeoutId = null;
+            clearTimeout(this.heartbeatTimeoutId)
+            this.heartbeatTimeoutId = null
         }
     }
 
-    public request(route, msg, cb) {
-        if (arguments.length === 2 && typeof msg === 'function') {
-            cb = msg
-            msg = {}
+    public request(route, message, cb) {
+        if (arguments.length === 2 && typeof message === 'function') {
+            cb = message
+            message = {}
         } else {
-            msg = msg || {}
+            message = message || {}
         }
 
-        route = route || msg.route
+        route = route || message.route
         if (!route) {
             return
         }
 
         let reqId = this.reqId++
-        this.sendMessage(reqId, route, msg)
+        this.sendMessage(reqId, route, message)
 
         this.callbacks[reqId] = cb
         this.routeMap[reqId] = route
     }
 
-    public notify(route, msg) {
-        msg = msg || {}
-        this.sendMessage(0, route, msg)
+    public notify(route, message) {
+        message = message || {}
+        this.sendMessage(0, route, message)
     }
 
     // 通过 => 定义 function, 使它可以在定义的时候捕获this, 而不是在使用的时候
@@ -312,7 +314,6 @@ export default class StartX {
             return;
         }
 
-        const obj = Package.encode(PackageType.Heartbeat)
         if (this.heartbeatTimeoutId) {
             clearTimeout(this.heartbeatTimeoutId)
             this.heartbeatTimeoutId = null
@@ -323,35 +324,35 @@ export default class StartX {
             return;
         }
 
-        let that = this
-        this.heartbeatId = setTimeout(function () {
-            that.heartbeatId = null;
-            that.send(obj);
+        this.heartbeatId = setTimeout(() => {
+            this.heartbeatId = null
+            const packet = Packet.encode(PacketType.Heartbeat)
+            this.send(packet)
 
-            that.nextHeartbeatTimeout = Date.now() + that.heartbeatTimeout;
-            that.heartbeatTimeoutId = setTimeout(that.heartbeatTimeoutCb, that.heartbeatTimeout);
-        }, this.heartbeatInterval);
+            this.nextHeartbeatTimeout = Date.now() + this.heartbeatTimeout
+            this.heartbeatTimeoutId = setTimeout(this.heartbeatTimeoutCb, this.heartbeatTimeout)
+        }, this.heartbeatInterval)
     }
 
     private handleHandshake = (data) => {
-        data = JSON.parse(strdecode(data))
+        let item = JSON.parse(strdecode(data))
 
         const RES_OLD_CLIENT = 501
-        if (data.code === RES_OLD_CLIENT) {
+        if (item.code === RES_OLD_CLIENT) {
             this.emit('error', 'client version not fullfill')
             return;
         }
 
         const RES_OK = 200
-        if (data.code !== RES_OK) {
+        if (item.code !== RES_OK) {
             this.emit('error', 'handshake fail');
-            return;
+            return
         }
 
-        this.handshakeInit(data);
+        this.handshakeInit(item)
 
-        const obj = Package.encode(PackageType.HandshakeAck);
-        this.send(obj);
+        const packet = Packet.encode(PacketType.HandshakeAck)
+        this.send(packet)
 
         if (this.initCallback) {
             this.initCallback(this.socket)

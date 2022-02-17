@@ -6,6 +6,7 @@
  *********************************************************************/
 import {strdecode, strencode} from "./protocol";
 import {BufferTools} from "./buffer_tools";
+import {MessageType} from "./message_type";
 
 export class Message {
     static MSG_FLAG_BYTES = 1
@@ -29,10 +30,10 @@ export class Message {
      */
     public static encode(id: number, type: MessageType, compressRoute: boolean, route: any, msg: Uint8Array): Uint8Array {
         // calculate message max length
-        const idBytes = MessageType.hasId(type) ? Message.calculateMsgIdBytes(id) : 0;
+        const idBytes = Message.hasId(type) ? Message.calculateMsgIdBytes(id) : 0;
         let msgLen = Message.MSG_FLAG_BYTES + idBytes;
 
-        if (MessageType.hasRoute(type)) {
+        if (Message.hasRoute(type)) {
             if (compressRoute) {
                 if (typeof route !== 'number') {
                     throw new Error('error flag for number route!');
@@ -61,12 +62,12 @@ export class Message {
         offset = Message.encodeMsgFlag(type, compressRoute, buffer, offset);
 
         // add message id
-        if (MessageType.hasId(type)) {
+        if (Message.hasId(type)) {
             offset = Message.encodeMsgId(id, buffer, offset);
         }
 
         // add route
-        if (MessageType.hasRoute(type)) {
+        if (Message.hasRoute(type)) {
             offset = Message.encodeMsgRoute(compressRoute, route, buffer, offset);
         }
 
@@ -97,7 +98,7 @@ export class Message {
         const type = (flag >> 1) & Message.MSG_TYPE_MASK;
 
         // parse id
-        if (MessageType.hasId(type)) {
+        if (Message.hasId(type)) {
             let m = (bytes[offset]);
             let i = 0;
             do {
@@ -109,7 +110,7 @@ export class Message {
         }
 
         // parse route
-        if (MessageType.hasRoute(type)) {
+        if (Message.hasRoute(type)) {
             if (compressRoute) {
                 route = ((bytes[offset++]) << 8 | bytes[offset++]).toString();
             } else {
@@ -145,7 +146,7 @@ export class Message {
     }
 
     private static encodeMsgFlag(type: MessageType, compressRoute: boolean, buffer, offset) {
-        if (!MessageType.isValid(type)) {
+        if (!Message.isValid(type)) {
             throw new Error('unknown message type: ' + type);
         }
 
@@ -193,6 +194,18 @@ export class Message {
     private static encodeMsgBody(msg: Uint8Array, buffer: Uint8Array, offset: number): number {
         BufferTools.blockCopy(msg, 0, buffer, offset, msg.length)
         return offset + msg.length;
+    }
+
+    private static hasId(type: MessageType): boolean {
+        return type === MessageType.Request || type === MessageType.Response;
+    }
+
+    private static hasRoute(type: MessageType): boolean {
+        return type === MessageType.Request || type === MessageType.Notify || type === MessageType.Push;
+    }
+
+    private static isValid(type: MessageType): boolean {
+        return type >= MessageType.Request && type < MessageType.Count;
     }
 
     private constructor(id: number, type: number, compressRoute: number, route: string, body: Uint8Array) {
